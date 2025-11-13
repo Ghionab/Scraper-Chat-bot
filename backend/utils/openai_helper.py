@@ -4,8 +4,17 @@ import os
 
 class OpenAIHelper:
     def __init__(self):
-        self.client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
-        self.model = "gpt-4-turbo-preview"
+        api_key = os.getenv('OPENAI_API_KEY')
+        api_base = os.getenv('OPENAI_API_BASE')
+        
+        # Initialize OpenAI client with custom base URL if provided
+        if api_base:
+            self.client = OpenAI(api_key=api_key, base_url=api_base)
+        else:
+            self.client = OpenAI(api_key=api_key)
+        
+        # Use gpt-4o-mini for better compatibility with custom API endpoints
+        self.model = "gpt-4o-mini"
         self.temperature = 0.7
         
         self.system_prompt = """You are a web scraping assistant. You analyze website content and extract only the information the user requests. 
@@ -64,6 +73,11 @@ If the user asks for specific data points (like prices, names, dates), present t
             }
             
         except Exception as e:
+            # Log the full error for debugging
+            print(f"OpenAI API Error: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            
             return {
                 'success': False,
                 'response': '',
