@@ -1,5 +1,7 @@
 from flask import Blueprint, request, jsonify
 from functools import wraps
+import re
+from urllib.parse import urlparse
 from backend.routes.auth import require_auth
 from backend.utils.db import (
     create_chat, get_user_chats, get_chat_messages, add_message,
@@ -13,6 +15,70 @@ chat_bp = Blueprint('chat', __name__)
 # Initialize scraper and OpenAI helper
 scraper = WebScraper()
 openai_helper = OpenAIHelper()
+
+
+# Validation functions
+
+def validate_url(url: str) -> tuple[bool, str]:
+    """
+    Validate URL format and scheme
+    
+    Args:
+        url: URL to validate
+        
+    Returns:
+        Tuple of (is_valid, error_message)
+    """
+    if not url:
+        return False, 'URL is required'
+    
+    # Check URL format
+    url_pattern = r'^https?://.+'
+    if not re.match(url_pattern, url):
+        return False, 'URL must start with http:// or https://'
+    
+    try:
+        parsed = urlparse(url)
+        
+        # Check if URL has a valid scheme and netloc
+        if not parsed.scheme or not parsed.netloc:
+            return False, 'Invalid URL format'
+        
+        # Only allow http and https schemes
+        if parsed.scheme not in ['http', 'https']:
+            return False, 'Only HTTP and HTTPS URLs are allowed'
+        
+        return True, ''
+        
+    except Exception:
+        return False, 'Invalid URL format'
+
+
+def sanitize_input(text: str) -> str:
+    """
+    Sanitize user input to prevent XSS and injection attacks
+    
+    Args:
+        text: Input text to sanitize
+        
+    Returns:
+        Sanitized text
+    """
+    if not text:
+        return ''
+    
+    # Strip leading/trailing whitespace
+    text = text.strip()
+    
+    # Remove null bytes
+    text = text.replace('\x00', '')
+    
+    # Limit length to prevent DoS
+    max_length = 10000
+    if len(text) > max_length:
+        text = text[:max_length]
+    
+    return text
 
 
 # Error handling decorator
@@ -84,13 +150,20 @@ def send_message():
     if not data:
         return jsonify({'success': False, 'error': 'No data provided'}), 400
     
-    prompt = data.get('prompt', '').strip()
+    # Sanitize inputs
+    prompt = sanitize_input(data.get('prompt', ''))
     if not prompt:
         return jsonify({'success': False, 'error': 'Prompt is required'}), 400
     
-    chat_id = data.get('chat_id')
-    url = data.get('url', '').strip()
+    chat_id = sanitize_input(data.get('chat_id', '')) if data.get('chat_id') else None
+    url = sanitize_input(data.get('url', ''))
     user_id = request.current_user_id
+    
+    # Validate URL if provided
+    if url:
+        is_valid, error_msg = validate_url(url)
+        if not is_valid:
+            return jsonify({'success': False, 'error': error_msg}), 400
     
     # Get or create chat session
     if chat_id:
