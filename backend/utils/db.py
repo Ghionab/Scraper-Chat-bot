@@ -13,6 +13,28 @@ def get_db() -> sqlite3.Connection:
     return conn
 
 
+def sanitize_db_input(text: str) -> str:
+    """
+    Sanitize input before database insertion
+    
+    Args:
+        text: Input text to sanitize
+        
+    Returns:
+        Sanitized text
+    """
+    if not text:
+        return ''
+    
+    # Remove null bytes which can cause issues with SQLite
+    text = text.replace('\x00', '')
+    
+    # Strip leading/trailing whitespace
+    text = text.strip()
+    
+    return text
+
+
 def init_db() -> None:
     """Initialize database schema"""
     conn = get_db()
@@ -82,6 +104,10 @@ def create_user(email: str, username: str, password_hash: str) -> int:
     """
     conn = get_db()
     cursor = conn.cursor()
+    
+    # Sanitize inputs
+    email = sanitize_db_input(email)
+    username = sanitize_db_input(username)
     
     cursor.execute(
         'INSERT INTO users (email, username, password_hash) VALUES (?, ?, ?)',
@@ -230,6 +256,9 @@ def add_message(chat_id: str, role: str, content: str) -> None:
     
     timestamp = datetime.now().isoformat()
     
+    # Sanitize content (chat_id and role are controlled by the application)
+    content = sanitize_db_input(content)
+    
     cursor.execute(
         'INSERT INTO messages (chat_id, role, content, timestamp) VALUES (?, ?, ?, ?)',
         (chat_id, role, content, timestamp)
@@ -273,6 +302,10 @@ def save_chat_metadata(chat_id: str, url: str, content: str) -> None:
     """
     conn = get_db()
     cursor = conn.cursor()
+    
+    # Sanitize inputs (chat_id is controlled by the application)
+    url = sanitize_db_input(url)
+    content = sanitize_db_input(content)
     
     # Use INSERT OR REPLACE to handle both insert and update
     cursor.execute(
