@@ -286,12 +286,15 @@ class UIController {
 
     toggleSidebar() {
         const sidebar = document.getElementById('sidebar');
+        const toggleBtn = document.getElementById('toggleSidebarBtn');
         this.sidebarOpen = !this.sidebarOpen;
         
         if (this.sidebarOpen) {
             sidebar.classList.remove('collapsed');
+            toggleBtn.innerHTML = '☰';
         } else {
             sidebar.classList.add('collapsed');
+            toggleBtn.innerHTML = '☰';
         }
     }
 
@@ -323,7 +326,8 @@ class UIController {
 
             const timestamp = document.createElement('div');
             timestamp.className = 'chat-timestamp';
-            timestamp.textContent = this.formatTimestamp(chat.timestamp);
+            // Use updated_at instead of timestamp
+            timestamp.textContent = this.formatTimestamp(chat.updated_at);
 
             chatItem.appendChild(preview);
             chatItem.appendChild(timestamp);
@@ -333,19 +337,31 @@ class UIController {
     }
 
     formatTimestamp(timestamp) {
-        const date = new Date(timestamp);
-        const now = new Date();
-        const diffMs = now - date;
-        const diffMins = Math.floor(diffMs / 60000);
-        const diffHours = Math.floor(diffMs / 3600000);
-        const diffDays = Math.floor(diffMs / 86400000);
-
-        if (diffMins < 1) return 'Just now';
-        if (diffMins < 60) return `${diffMins}m ago`;
-        if (diffHours < 24) return `${diffHours}h ago`;
-        if (diffDays < 7) return `${diffDays}d ago`;
+        if (!timestamp) return 'Just now';
         
-        return date.toLocaleDateString();
+        try {
+            const date = new Date(timestamp);
+            
+            // Check if date is valid
+            if (isNaN(date.getTime())) {
+                return 'Just now';
+            }
+            
+            const now = new Date();
+            const diffMs = now - date;
+            const diffMins = Math.floor(diffMs / 60000);
+            const diffHours = Math.floor(diffMs / 3600000);
+            const diffDays = Math.floor(diffMs / 86400000);
+
+            if (diffMins < 1) return 'Just now';
+            if (diffMins < 60) return `${diffMins}m ago`;
+            if (diffHours < 24) return `${diffHours}h ago`;
+            if (diffDays < 7) return `${diffDays}d ago`;
+            
+            return date.toLocaleDateString();
+        } catch (error) {
+            return 'Just now';
+        }
     }
 
     showError(message) {
@@ -406,15 +422,23 @@ async function loadUserInfo() {
 }
 
 function setupEventListeners() {
+    const promptTextarea = document.getElementById('promptTextarea');
+    
     // Send button
     document.getElementById('sendBtn').addEventListener('click', handleSendMessage);
 
     // Enter key in textarea
-    document.getElementById('promptTextarea').addEventListener('keydown', (e) => {
+    promptTextarea.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
             handleSendMessage();
         }
+    });
+
+    // Auto-resize textarea
+    promptTextarea.addEventListener('input', function() {
+        this.style.height = 'auto';
+        this.style.height = Math.min(this.scrollHeight, 200) + 'px';
     });
 
     // New chat button
@@ -441,19 +465,28 @@ function setupEventListeners() {
 }
 
 async function handleSendMessage() {
-    const url = document.getElementById('urlInput').value.trim();
+    let url = document.getElementById('urlInput').value.trim();
     const prompt = document.getElementById('promptTextarea').value.trim();
+    const promptTextarea = document.getElementById('promptTextarea');
 
     if (!prompt) {
         uiController.showError('Please enter a prompt');
         return;
     }
 
+    // Auto-add https:// if URL doesn't have a protocol
+    if (url && !url.match(/^https?:\/\//i)) {
+        url = 'https://' + url;
+        // Update the input field to show the full URL
+        document.getElementById('urlInput').value = url;
+    }
+
     // Send message
     await chatManager.sendMessage(url, prompt);
 
-    // Clear inputs
-    document.getElementById('promptTextarea').value = '';
+    // Clear inputs and reset textarea height
+    promptTextarea.value = '';
+    promptTextarea.style.height = 'auto';
     // Keep URL for follow-up questions unless user clears it
 }
 
