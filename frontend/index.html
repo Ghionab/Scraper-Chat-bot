@@ -7,24 +7,15 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <!-- Top Navbar -->
-    <nav class="navbar">
-        <div class="navbar-brand">
-            <h1>Web Scraping Chatbot</h1>
-        </div>
-        <div class="navbar-user">
-            <span class="user-info" id="userInfo"></span>
-            <button class="logout-btn" id="logoutBtn">Logout</button>
-        </div>
-    </nav>
-
     <!-- Main Container -->
     <div class="main-container">
         <!-- Collapsible Sidebar -->
         <aside class="sidebar" id="sidebar">
             <div class="sidebar-header">
-                <button class="new-chat-btn" id="newChatBtn">+ New Chat</button>
-                <button class="toggle-sidebar-btn" id="toggleSidebarBtn">☰</button>
+                <button class="new-chat-btn" id="newChatBtn">
+                    <span>+</span>
+                    <span>New chat</span>
+                </button>
             </div>
             <div class="chat-history" id="chatHistory">
                 <!-- Chat history items will be dynamically inserted here -->
@@ -33,6 +24,18 @@
 
         <!-- Main Chat Area -->
         <main class="chat-area">
+            <!-- Top Navbar -->
+            <nav class="navbar">
+                <div class="navbar-brand">
+                    <button class="toggle-sidebar-btn" id="toggleSidebarBtn">☰</button>
+                    <h1>Web Scraping AI</h1>
+                </div>
+                <div class="navbar-user">
+                    <span class="user-info" id="userInfo"></span>
+                    <button class="logout-btn" id="logoutBtn">Logout</button>
+                </div>
+            </nav>
+
             <!-- Messages Container -->
             <div class="messages-container" id="messagesContainer">
                 <!-- Chat messages will be dynamically inserted here -->
@@ -40,29 +43,37 @@
 
             <!-- Input Section -->
             <div class="input-section">
-                <div class="input-row">
-                    <input 
-                        type="text" 
-                        class="url-input" 
-                        id="urlInput" 
-                        placeholder="Enter website URL (optional for follow-ups)"
-                    >
-                </div>
-                <div class="input-row">
-                    <textarea 
-                        class="prompt-textarea" 
-                        id="promptTextarea" 
-                        placeholder="What information would you like to extract?"
-                        rows="3"
-                    ></textarea>
-                    <button class="send-btn" id="sendBtn">Send</button>
+                <div class="input-container">
+                    <div class="input-row">
+                        <input 
+                            type="text" 
+                            class="url-input" 
+                            id="urlInput" 
+                            placeholder="Website URL (optional - no need for https://)"
+                        >
+                    </div>
+                    <div class="prompt-container">
+                        <textarea 
+                            class="prompt-textarea" 
+                            id="promptTextarea" 
+                            placeholder="Message Web Scraping AI..."
+                            rows="1"
+                        ></textarea>
+                        <button class="send-btn" id="sendBtn" title="Send message">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
+                            </svg>
+                        </button>
+                    </div>
                 </div>
             </div>
 
             <!-- Loading Animation (hidden by default) -->
             <div class="loading-animation" id="loadingAnimation" style="display: none;">
-                <div class="loading-spinner"></div>
-                <span class="loading-text">Processing...</span>
+                <div class="loading-content">
+                    <div class="loading-spinner"></div>
+                    <span class="loading-text">Thinking...</span>
+                </div>
             </div>
         </main>
     </div>
